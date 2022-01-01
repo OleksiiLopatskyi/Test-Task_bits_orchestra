@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,12 @@ namespace Task_CsvReader.Controllers
         public IActionResult Index()
         {
             return View();
+        }
+
+        public async Task<IActionResult> UploadCSV(IFormCollection form)
+        {
+            var uploadedFile = form.Files["csvFile"];
+            return Json(new {message="success"});
         }
 
         public IActionResult Privacy()

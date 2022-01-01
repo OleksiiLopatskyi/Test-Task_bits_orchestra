@@ -2,7 +2,36 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<input id="input" type="file" />
+<input id="UploadButton" type="button" value="Upload"/>
+
+@section scripts{ 
+<script>
+    $(document).ready(function () {
+        var input = $("#input");
+        var uploadedFile = null;
+        var formData = new FormData();
+        input.change(function () {
+            file = input[0].files[0];
+            formData.append("csvFile", file);
+        });
+        $("#UploadButton").click(function (e) {
+            e.preventDefault();
+            Upload(formData);
+        })
+
+    })
+    function Upload(form) {
+        $.ajax({
+            type: "POST",
+            url: "/Home/UploadCSV",
+            processData: false,
+            contentType: false,
+            data: form,
+            success: function (json) {
+                alert(json.message);
+            }
+        })
+    }
+</script>
+}
