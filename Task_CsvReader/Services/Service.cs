@@ -13,24 +13,55 @@ namespace Task_CsvReader.Services
 {
     public class Service : IService
     {
-        public IEnumerable<User> ReadCSV(IFormFile file)
+        public async Task<List<User>> GetUsersFromCsvAsync(IFormFile file,string filePath,string Delimiter)
         {
+            bool fileExists = File.Exists(filePath);
             var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                Delimiter=";"
+                
+                Delimiter=Delimiter,
             };
-            using(var fileReader = new StreamReader(file.OpenReadStream()))
+
+            if (fileExists)
             {
-                using(var csvReader = new CsvReader(fileReader, csvConfig))
+                return await ReadFile(filePath,csvConfig);
+            }
+            else
+            {
+                await SaveAsync(file,filePath);
+                return await ReadFile(filePath,csvConfig);
+            }
+
+        }
+
+        private async Task<List<User>> ReadFile(string path, CsvConfiguration csvConfig)
+        {
+            List<User> users = new List<User>();
+            await Task.Run(() =>
+            {
+                using (StreamReader stream = new StreamReader(path))
                 {
-                    csvReader.Read();
-                    csvReader.ReadHeader();
-                    while (csvReader.Read())
+                    using (var csvReader = new CsvReader(stream, csvConfig))
                     {
-                        var user = csvReader.GetRecord<User>();
-                        yield return user;
+                        csvReader.Context.RegisterClassMap<UsersMap>();
+                        csvReader.Read();
+                        csvReader.ReadHeader();
+                        while (csvReader.Read())
+                        {
+                            var user = csvReader.GetRecord<User>();
+                            users.Add(user);
+                        }
                     }
                 }
+            });
+            return users;
+        }
+
+        private async Task SaveAsync(IFormFile file, string path)
+        {
+            using (FileStream stream = File.Create(path))
+            {
+                await file.CopyToAsync(stream);
             }
         }
     }

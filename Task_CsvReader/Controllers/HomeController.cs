@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -15,10 +16,14 @@ namespace Task_CsvReader.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IService _service;
-        public HomeController(ILogger<HomeController> logger,IService service)
+        private readonly IWebHostEnvironment _environment;
+        public HomeController(ILogger<HomeController> logger,
+            IService service,
+            IWebHostEnvironment environment)
         {
             _logger = logger;
             _service = service;
+            _environment = environment;
         }
 
         public IActionResult Index()
@@ -29,7 +34,8 @@ namespace Task_CsvReader.Controllers
         public async Task<IActionResult> UploadCSV(IFormCollection form)
         {
             var uploadedFile = form.Files["csvFile"];
-            var uploadedUsers = _service.ReadCSV(uploadedFile);
+            string path = $@"{_environment.WebRootPath}\Uploads\{uploadedFile.FileName}";
+            var uploadedUsers = await _service.GetUsersFromCsvAsync(uploadedFile,path,";");
             return Json(new {message="success"});
         }
 
