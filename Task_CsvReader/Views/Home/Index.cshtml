@@ -4,9 +4,37 @@
 
 <input id="input" type="file" />
 <input id="UploadButton" type="button" value="Upload"/>
+<input id="ShowButton" disabled onclick="ShowUsers()" value="show" type="button"/>
 
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                <span>Id</span>
+            </th>
+            <th>
+                <span>Name</span>
+            </th>
+            <th>
+                <span>BirthDay</span>
+            </th>
+            <th>
+                <span>Phone</span>
+            </th>
+            <th>
+                <span>Married</span>
+            </th>
+            <th>
+                <span>Salary</span>
+            </th>
+        </tr>
+    </thead>
+    <tbody id="Users">
+      
+    </tbody>
+</table>
 @section scripts{ 
-<script>
+    <script>
     $(document).ready(function () {
         var input = $("#input");
         var uploadedFile = null;
@@ -18,7 +46,7 @@
         $("#UploadButton").click(function (e) {
             e.preventDefault();
             Upload(formData);
-        })
+        });
 
     })
     function Upload(form) {
@@ -29,9 +57,49 @@
             contentType: false,
             data: form,
             success: function (json) {
-                alert(json.message);
+                $("#ShowButton").removeAttr("disabled");
             }
         })
     }
-</script>
+    function ShowUsers() {
+        var SetData = $("#Users");
+
+        $.ajax({
+            type: "POST",
+            url: "/Home/ShowUsers",
+            success: function (json) {
+                SetData.html("");
+                $.each(json.users, function(index,value){
+                    var data = `<tr>
+                <td>
+                    <span>${value.id}</span>
+                </td>
+                <td>
+                   <span>${value.name}</span>
+                </td>
+                 <td>
+                   <span>${value.birthDay}</span>
+                </td>
+                <td>
+                   <span>${value.phone}</span>
+                </td>
+                <td>
+                   <span>${value.married}</span>
+                </td>
+                 <td>
+                   <span>${value.salary}</span>
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="${value.id}">Edit</a>
+                    <a asp-action="Details" asp-route-id="${value.id}">Details</a>
+                    <a asp-action="Delete" asp-route-id="${value.id}">Delete</a>
+                </td>
+            </tr>`;
+
+                    SetData.append(data);
+                })
+            }
+        });
+    }
+    </script>
 }
