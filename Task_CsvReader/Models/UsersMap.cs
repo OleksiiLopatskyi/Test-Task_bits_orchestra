@@ -14,6 +14,7 @@ namespace Task_CsvReader.Models
         {
             AutoMap(CultureInfo.InvariantCulture);
             Map(i => i.Id).Ignore();
+            Map(i => i.ConvertedDateOfBirth).Ignore();
         }
     }
 }

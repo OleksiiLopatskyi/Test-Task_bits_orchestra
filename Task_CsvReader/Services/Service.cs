@@ -15,13 +15,15 @@ namespace Task_CsvReader.Services
 {
     public class Service : IService
     {
-        public void AddUsersToDatabase(UsersContext context, List<User> users)
+        public async Task AddUsersToDatabase(UsersContext context, List<User> users)
         {
                 foreach (var item in users)
                 {
+                    item.ConvertedDateOfBirth = item.BirthDay.ToString("dd-MM-yyyy");
                     context.Users.Add(item);
-                    context.SaveChanges();
                 }
+            await context.SaveChangesAsync();
+
         }
 
         public async Task<List<User>> GetUsersFromCsvAsync(IFormFile file,string filePath,string Delimiter)
@@ -79,6 +81,54 @@ namespace Task_CsvReader.Services
             await Task.Run(() => {
                 File.Delete(path);
             });
+        }
+
+        public async Task<List<User>> SortUsersBy(SortBy SortBy,List<User>users)
+        {
+            List<User> sortedUsers = new List<User>();
+            await Task.Run(() =>
+            {
+                switch (SortBy)
+                {
+                    case SortBy.Id:
+                        sortedUsers = users.OrderByDescending(i => i.Id).ToList();
+                        break;
+                    case SortBy.IdDesc:
+                        sortedUsers = users.OrderBy(i => i.Id).ToList();
+                        break;
+                    case SortBy.Name:
+                        sortedUsers = users.OrderByDescending(i => i.Name).ToList();
+                        break;
+                    case SortBy.NameDesc:
+                        sortedUsers = users.OrderBy(i => i.Name).ToList();
+                        break;
+                    case SortBy.BirthDay:
+                        sortedUsers = users.OrderByDescending(i => i.BirthDay).ToList();
+                        break;
+                    case SortBy.BirthDayDesc:
+                        sortedUsers = users.OrderBy(i => i.BirthDay).ToList();
+                        break;
+                    case SortBy.Salary:
+                        sortedUsers = users.OrderByDescending(i => i.Salary).ToList();
+                        break;
+                    case SortBy.SalaryDesc:
+                        sortedUsers = users.OrderBy(i => i.Salary).ToList();
+                        break;
+                    case SortBy.Married:
+                        sortedUsers = users.OrderByDescending(i => i.Married).ToList();
+                        break;
+                    case SortBy.MarriedDesc:
+                        sortedUsers = users.OrderBy(i => i.Married).ToList();
+                        break;
+                    case SortBy.Phone:
+                        sortedUsers = users.OrderByDescending(i => i.Phone).ToList();
+                        break;
+                    case SortBy.PhoneDesc:
+                        sortedUsers = users.OrderBy(i => i.Phone).ToList();
+                        break;
+                }
+            });
+            return sortedUsers;
         }
     }
 }

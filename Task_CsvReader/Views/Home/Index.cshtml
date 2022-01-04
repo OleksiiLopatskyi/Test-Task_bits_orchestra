@@ -3,103 +3,210 @@
 }
 
 <input id="input" type="file" />
-<input id="UploadButton" type="button" value="Upload"/>
-<input id="ShowButton" disabled onclick="ShowUsers()" value="show" type="button"/>
+<input id="UploadButton" type="button" value="Upload" />
+<input id="ShowButton" disabled onclick="AllUsers()" value="show" type="button" />
+<div hidden id="searchBox">
+    <input type="search" class="form-control" placeholder="Search..." id="datatable-search-input">
+    <select id="selectedProperty" style="position: absolute; top: 109px; left: 199px;">
+        <option>Id</option>
+        <option>Name</option>
+        <option>BirthDay</option>
+        <option>Phone</option>
+        <option>Married</option>
+        <option>Salary</option>
+    </select>
+</div>
 
 <table class="table">
+
     <thead>
+
         <tr>
             <th>
-                <span>Id</span>
+                <span onclick="SortBy('0','id')" id="idColumn">Id</span>
+                <span hidden onclick="SortBy('1','idDesc')" id="idColumnDesc">Id</span>
             </th>
             <th>
-                <span>Name</span>
+                <span onclick="SortBy('2','name')" id="nameColumn">Name</span>
+                <span hidden onclick="SortBy('3','nameDesc')" id="nameColumnDesc">Name</span>
             </th>
             <th>
-                <span>BirthDay</span>
+                <span onclick="SortBy('4','birthDay')" id="birthDayColumn">BirthDay</span>
+                <span hidden onclick="SortBy('5','birthDayDesc')" id="birthDayColumnDesc">BirthDay</span>
             </th>
             <th>
-                <span>Phone</span>
+                <span onclick="SortBy('6','phone')" id="phoneColumn">Phone</span>
+                <span hidden onclick="SortBy('7','phoneDesc')" id="phoneColumnDesc">Phone</span>
             </th>
             <th>
-                <span>Married</span>
+                <span onclick="SortBy('8','married')" id="marriedColumn">Married</span>
+                <span hidden onclick="SortBy('9','marriedDesc')" id="marriedColumnDesc">Married</span>
             </th>
             <th>
-                <span>Salary</span>
+                <span onclick="SortBy('10','salary')" id="salaryColumn">Salary</span>
+                <span hidden onclick="SortBy('11','salaryDesc')" id="salaryColumnDesc">Salary</span>
             </th>
         </tr>
     </thead>
-    <tbody id="Users">
-      
+    <tbody id="UsersTable">
     </tbody>
 </table>
-@section scripts{ 
+@section scripts{
     <script>
-    $(document).ready(function () {
-        var input = $("#input");
-        var uploadedFile = null;
-        var formData = new FormData();
-        input.change(function () {
-            file = input[0].files[0];
-            formData.append("csvFile", file);
-        });
-        $("#UploadButton").click(function (e) {
-            e.preventDefault();
-            Upload(formData);
-        });
-
-    })
-    function Upload(form) {
-        $.ajax({
-            type: "POST",
-            url: "/Home/UploadCSV",
-            processData: false,
-            contentType: false,
-            data: form,
-            success: function (json) {
-                $("#ShowButton").removeAttr("disabled");
-            }
+        $(document).ready(function () {
+            var input = $("#input");
+            var uploadedFile = null;
+            var currentUsers = [];
+            var table = $("#UsersTable");
+            var formData = new FormData();
+            input.change(function () {
+                file = input[0].files[0];
+                formData.append("csvFile", file);
+            });
+            $("#UploadButton").click(function (e) {
+                e.preventDefault();
+                Upload(formData);
+            });
+            $("#datatable-search-input").keyup(function () {
+                var selectedSearchProperty = $("#selectedProperty").val();
+                var searchValue = $(this).val();
+                Search(selectedSearchProperty, searchValue, table);
+            })
         })
-    }
-    function ShowUsers() {
-        var SetData = $("#Users");
+        function Search(by, value, table) {
+            table.html("");
+            $.ajax({
+                type: "POST",
+                url: "/Home/Search?property=" + by + "&value=" + value,
+                success: function (json) {
+                    ShowUsers(json.users, table);
+                    currentUsers = json.users;
+                }
+            })
+        }
+        function SortBy(value, buttonName) {
+            var SetData = $("#UsersTable");
+            var searchValue = $("#datatable-search-input").val();
+            var selectedSearchProperty = $("#selectedProperty").val();
+            ChangeOrdering(buttonName);
 
-        $.ajax({
-            type: "POST",
-            url: "/Home/ShowUsers",
-            success: function (json) {
-                SetData.html("");
-                $.each(json.users, function(index,value){
-                    var data = `<tr>
-                <td>
-                    <span>${value.id}</span>
-                </td>
-                <td>
-                   <span>${value.name}</span>
-                </td>
-                 <td>
-                   <span>${value.birthDay}</span>
-                </td>
-                <td>
-                   <span>${value.phone}</span>
-                </td>
-                <td>
-                   <span>${value.married}</span>
-                </td>
-                 <td>
-                   <span>${value.salary}</span>
-                </td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="${value.id}">Edit</a>
-                    <a asp-action="Details" asp-route-id="${value.id}">Details</a>
-                    <a asp-action="Delete" asp-route-id="${value.id}">Delete</a>
-                </td>
-            </tr>`;
-
-                    SetData.append(data);
+                $.ajax({
+                    type: "GET",
+                    url: `/Home/Sort?search=${searchValue}&property=${selectedSearchProperty}&SortBy=${value}`,
+                    success: function (json) {
+                        SetData.html("");
+                        ShowUsers(json.users, SetData);
+                    }
                 })
             }
-        });
-    }
+
+        function Upload(form) {
+            $.ajax({
+                type: "POST",
+                url: "/Home/UploadCSV",
+                processData: false,
+                contentType: false,
+                data: form,
+                success: function (json) {
+                    $("#ShowButton").removeAttr("disabled");
+                }
+            })
+        }
+        function AllUsers() {
+            var SetData = $("#UsersTable");
+            $("#searchBox").removeAttr("hidden");
+            $.ajax({
+                type: "POST",
+                url: "/Home/ShowUsers",
+                success: function (json) {
+                    alert(json.users.length);
+                    ShowUsers(json.users, SetData);
+                }
+            });
+        }
+        function ShowUsers(users, table) {
+            $.each(users, function (index, value) {
+                var data = `<tr>
+                    <td>
+                        <span>${value.id}</span>
+                    </td>
+                    <td>
+                       <span>${value.name}</span>
+                    </td>
+                     <td>
+                       <span>${value.convertedDateOfBirth}</span>
+                    </td>
+                    <td>
+                       <span>${value.phone}</span>
+                    </td>
+                    <td>
+                       <span>${value.married}</span>
+                    </td>
+                     <td>
+                       <span>${value.salary}</span>
+                    </td>
+                    <td>
+                        <a href="/Users/Edit/${value.id}">Edit</a>
+                        <a href="/Users/Delete/${value.id}">Delete</a>
+                    </td>
+                </tr>`;
+
+                table.append(data);
+            })
+        }
+        function ChangeOrdering(buttonName) {
+            switch (buttonName) {
+                case "id":
+                    $("#idColumnDesc").removeAttr("hidden");
+                    $("#idColumn").attr("hidden", true);
+                    break;
+                case "idDesc":
+                    $("#idColumn").removeAttr("hidden");
+                    $("#idColumnDesc").attr("hidden", true);
+                    break;
+                case "name":
+                    $("#nameColumnDesc").removeAttr("hidden");
+                    $("#nameColumn").attr("hidden", true);
+                    break;
+                case "nameDesc":
+                    $("#nameColumn").removeAttr("hidden");
+                    $("#nameColumnDesc").attr("hidden", true);
+                    break;
+                case "birthDay":
+                    $("#birthDayColumnDesc").removeAttr("hidden");
+                    $("#birthDayColumn").attr("hidden", true);
+                    break;
+                case "birthDayDesc":
+                    $("#birthDayColumn").removeAttr("hidden");
+                    $("#birthDayColumnDesc").attr("hidden", true);
+                    break;
+                case "phone":
+                    $("#nameColumnDesc").removeAttr("hidden");
+                    $("#nameColumn").attr("hidden", true);
+                    break;
+                case "phoneDesc":
+                    $("#phoneColumn").removeAttr("hidden");
+                    $("#phoneColumnDesc").attr("hidden", true);
+                    break;
+                case "married":
+                    $("#marriedColumnDesc").removeAttr("hidden");
+                    $("#marriedColumn").attr("hidden", true);
+                    break;
+                case "marriedDesc":
+                    $("#marriedColumn").removeAttr("hidden");
+                    $("#marriedColumnDesc").attr("hidden", true);
+                    break;
+                case "salary":
+                    $("#salaryColumnDesc").removeAttr("hidden");
+                    $("#salaryColumn").attr("hidden", true);
+                    break;
+                case "salaryDesc":
+                    $("#salaryColumn").removeAttr("hidden");
+                    $("#salaryColumnDesc").attr("hidden", true);
+                    break;
+                default:
+            }
+
+        }
     </script>
 }
