@@ -8,6 +8,7 @@ namespace Task_CsvReader.Models.DatabaseContext
 {
     public class UsersContext:DbContext
     {
+        public DbSet<File> Files { get; set; }
         public DbSet<User> Users { get; set; }
         public UsersContext(DbContextOptions<UsersContext>options):base(options)
         {

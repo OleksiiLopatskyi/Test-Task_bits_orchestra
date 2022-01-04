@@ -13,7 +13,8 @@ namespace Task_CsvReader.Services
     {
         Task<List<User>> GetUsersFromCsvAsync(IFormFile file,string path,string Delimiter);
         Task DeleteFileAsync(string path);
-        Task AddUsersToDatabase(UsersContext context,List<User>users);
+        Task AddUsersToDatabase(UsersContext context,File file);
         Task<List<User>> SortUsersBy(SortBy SortBy,List<User>users);
+        Task<byte[]> DownloadCSV(UsersContext context,string fileName,string path);
     }
 }

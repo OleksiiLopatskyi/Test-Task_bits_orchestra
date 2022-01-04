@@ -10,25 +10,23 @@ using CsvHelper.Configuration;
 using System.Threading.Tasks;
 using Task_CsvReader.Models;
 using Task_CsvReader.Models.DatabaseContext;
+using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace Task_CsvReader.Services
 {
     public class Service : IService
     {
-        public async Task AddUsersToDatabase(UsersContext context, List<User> users)
+        public async Task AddUsersToDatabase(UsersContext context,Models.File file)
         {
-                foreach (var item in users)
-                {
-                    item.ConvertedDateOfBirth = item.BirthDay.ToString("dd-MM-yyyy");
-                    context.Users.Add(item);
-                }
+            context.Files.Add(file);
             await context.SaveChangesAsync();
 
         }
 
         public async Task<List<User>> GetUsersFromCsvAsync(IFormFile file,string filePath,string Delimiter)
         {
-            bool fileExists = File.Exists(filePath);
+            bool fileExists = System.IO.File.Exists(filePath);
             var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
                 Delimiter=Delimiter,
@@ -61,6 +59,7 @@ namespace Task_CsvReader.Services
                         while (csvReader.Read())
                         {
                             var user = csvReader.GetRecord<User>();
+                            user.ConvertedDateOfBirth = user.BirthDay.ToString("dd-mm-yyyy");
                             users.Add(user);
                         }
                     }
@@ -71,7 +70,7 @@ namespace Task_CsvReader.Services
 
         private async Task SaveAsync(IFormFile file, string path)
         {
-            using (FileStream stream = File.Create(path))
+            using (FileStream stream = System.IO.File.Create(path))
             {
                 await file.CopyToAsync(stream);
             }
@@ -79,7 +78,7 @@ namespace Task_CsvReader.Services
         public async Task DeleteFileAsync(string path)
         {
             await Task.Run(() => {
-                File.Delete(path);
+                System.IO.File.Delete(path);
             });
         }
 
@@ -129,6 +128,22 @@ namespace Task_CsvReader.Services
                 }
             });
             return sortedUsers;
+        }
+
+        public async Task<byte[]> DownloadCSV(UsersContext context,string fileName,string path)
+        {
+            var file = await context.Files.Include(i=>i.Users).FirstOrDefaultAsync(i=>i.FileName==fileName);
+            var users = file.Users;
+            using(var stream = new StreamWriter(path))
+            {
+                using(CsvWriter writer = new CsvWriter(stream, CultureInfo.InvariantCulture))
+                {
+                    writer.Context.RegisterClassMap<UsersMap>();
+                    writer.WriteRecords(users);
+                }
+            }
+            byte[] fileBytes = System.IO.File.ReadAllBytes(path);
+            return fileBytes;
         }
     }
 }

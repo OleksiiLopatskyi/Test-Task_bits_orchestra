@@ -37,55 +37,20 @@ namespace Task_CsvReader.Controllers
         {
             return View();
         }
-
-        public async Task<IActionResult> UploadCSV(IFormCollection form)
+        public async Task<IActionResult> ShowAvailableFiles()
         {
-            var uploadedFile = form.Files["csvFile"];
-            string path = $@"{_environment.WebRootPath}\Uploads\{uploadedFile.FileName}";
-            var uploadedUsers = await _service.GetUsersFromCsvAsync(uploadedFile,path,";");
-            await _service.AddUsersToDatabase(_db,uploadedUsers);
-            await _service.DeleteFileAsync(path);
-            return Json(new {message="success"});
+            var availableFiles = await _db.Files.ToListAsync();
+            return Json(new { files = availableFiles });
         }
-        public async Task<IActionResult> ShowUsers()
-        {
-            var users = await _db.Users.ToListAsync();
+        public async Task<IActionResult> ShowUsersFromFile(string fileName) {
+            var file = await _db.Files.Include(i=>i.Users).FirstOrDefaultAsync(i=>i.FileName==fileName);
+            var users = file.Users;
             return Json(new {users=users});
         }
-        public async Task<IActionResult> Sort(string search,string property,SortBy SortBy)
-        {
-
-            var foundUsers = await _db.Users.ToListAsync();
-            switch (property)
-            {
-              
-                case "Name":
-                    foundUsers = await _db.Users.Where(i => i.Name.Contains(search)).ToListAsync();
-                    break;
-                case "BirthDay":
-                    foundUsers = await _db.Users.Where(i => i.ConvertedDateOfBirth.Contains(search)).ToListAsync();
-                    break;
-                case "Phone":
-                    foundUsers = await _db.Users.Where(i => i.Phone.Contains(search)).ToListAsync();
-                    break;
-                case "Married":
-                    if (search.Contains("f"))
-                        foundUsers = await _db.Users.Where(i => i.Married == false).ToListAsync();
-                    if (search.Contains("t"))
-                        foundUsers = await _db.Users.Where(i => i.Married == true).ToListAsync();
-                    break;
-                case "Salary":
-                    foundUsers = await _db.Users.Where(i => i.Salary.ToString().Contains(search)).ToListAsync();
-                    break;
-                default:
-                    break;
-            }
-            var sortedUsers = await _service.SortUsersBy(SortBy,foundUsers);
-            return Json(new { users = sortedUsers });
-        }
-        public async Task<IActionResult> Search(string property, string value)
+        public async Task<IActionResult> FindUsersInFile(string property,string value,string fileName)
         {
             List<User> foundUsers = new List<User>();
+            var file = await _db.Files.Include(i=>i.Users).FirstOrDefaultAsync(i=>i.FileName==fileName);
             switch (property)
             {
                 case "Id":
@@ -94,29 +59,77 @@ namespace Task_CsvReader.Controllers
                     foundUsers.Add(user);
                     break;
                 case "Name":
-                    foundUsers = await _db.Users.Where(i=>i.Name.Contains(value)).ToListAsync();
+                    foundUsers = file.Users.Where(i => i.Name.Contains(value)).ToList();
                     break;
                 case "BirthDay":
-                    foundUsers = await _db.Users.Where(i => i.ConvertedDateOfBirth.Contains(value)).ToListAsync();
+                    foundUsers = file.Users.Where(i => i.ConvertedDateOfBirth.Contains(value)).ToList();
                     break;
                 case "Phone":
-                    foundUsers = await _db.Users.Where(i => i.Phone.Contains(value)).ToListAsync();
+                    foundUsers = file.Users.Where(i => i.Phone.Contains(value)).ToList();
                     break;
                 case "Married":
-                    if(value.Contains("f"))
-                    foundUsers = await _db.Users.Where(i => i.Married==false).ToListAsync();
-                    if(value.Contains("t"))
-                    foundUsers = await _db.Users.Where(i => i.Married==true).ToListAsync();
+                    if (value.Contains("f"))
+                        foundUsers = file.Users.Where(i => i.Married == false).ToList();
+                    if (value.Contains("t"))
+                        foundUsers = file.Users.Where(i => i.Married == true).ToList();
                     break;
                 case "Salary":
-                    foundUsers = await _db.Users.Where(i => i.Salary.ToString().Contains(value)).ToListAsync();
+                    foundUsers = file.Users.Where(i => i.Salary.ToString().Contains(value)).ToList();
                     break;
                 default:
                     break;
             }
-            return Json(new {users=foundUsers});
+            return Json(new { users = foundUsers });
         }
-    
+        public async Task<IActionResult> ShowUsers()
+        {
+            var users = await _db.Users.ToListAsync();
+            return Json(new {users=users});
+        }
+        public async Task<IActionResult> Sort(string search,string property,SortBy SortBy,string fileName)
+        {
+            var file = await _db.Files.Include(i=>i.Users).FirstOrDefaultAsync(i=>i.FileName==fileName);
+            var foundUsers = file.Users.ToList();
+            var sortedUsers = new List<User>();
+            if (search == string.Empty) foundUsers = file.Users.ToList();
+            else
+            switch (property)
+            {
+              
+                case "Name":
+                    foundUsers = file.Users.Where(i => i.Name.Contains(search)).ToList();
+                    break;
+                case "BirthDay":
+                    foundUsers = file.Users.Where(i => i.ConvertedDateOfBirth.Contains(search)).ToList();
+                    break;
+                case "Phone":
+                    foundUsers = file.Users.Where(i => i.Phone.Contains(search)).ToList();
+                    break;
+                case "Married":
+                    if (search.Contains("f"))
+                        foundUsers = file.Users.Where(i => i.Married == false).ToList();
+                    if (search.Contains("t"))
+                        foundUsers = file.Users.Where(i => i.Married == true).ToList();
+                    break;
+                case "Salary":
+                    foundUsers = file.Users.Where(i => i.Salary.ToString().Contains(search)).ToList();
+                    break;
+                default:
+                    break;
+            }
+            sortedUsers = await _service.SortUsersBy(SortBy,foundUsers);
+            return Json(new { users = sortedUsers });
+        }
+        public async Task<IActionResult> DownloadCSV(string fileName)
+        {
+            string path = $@"{_environment.WebRootPath}\Uploads\{fileName}.csv";
+            byte[] fileBytes = await _service.DownloadCSV(_db,fileName,path);
+            // Тип файла - content-type
+            string file_type = "application/octet-stream";
+            // Имя файла - необязательно
+            string file_name = fileName+".csv";
+            return File(fileBytes, file_type, file_name);
+        }
         public IActionResult Privacy()
         {
             return View();

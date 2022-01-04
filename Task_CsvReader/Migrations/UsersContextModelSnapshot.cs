@@ -19,6 +19,24 @@ namespace Task_CsvReader.Migrations
                 .HasAnnotation("ProductVersion", "5.0.13")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+            modelBuilder.Entity("Task_CsvReader.Models.File", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("DateOfCreation")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Files");
+                });
+
             modelBuilder.Entity("Task_CsvReader.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -28,6 +46,12 @@ namespace Task_CsvReader.Migrations
 
                     b.Property<DateTime>("BirthDay")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("ConvertedDateOfBirth")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("FileId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("Married")
                         .HasColumnType("bit");
@@ -43,7 +67,21 @@ namespace Task_CsvReader.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FileId");
+
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Task_CsvReader.Models.User", b =>
+                {
+                    b.HasOne("Task_CsvReader.Models.File", null)
+                        .WithMany("Users")
+                        .HasForeignKey("FileId");
+                });
+
+            modelBuilder.Entity("Task_CsvReader.Models.File", b =>
+                {
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

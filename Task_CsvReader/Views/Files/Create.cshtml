@@ -1,0 +1,74 @@
+﻿@model Task_CsvReader.Models.File
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>File</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <div class="text-danger"></div>
+        <div class="form-group">
+            <label class="control-label"></label>
+            <input id="fileName" class="form-control" placeholder="Name..." />
+            <span class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label"></label>
+            <input id="delimiter" max="1" min="1" class="form-control" placeholder="Delimiter"/>
+            <span class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label"></label>
+            <input id="input" type="file" class="form-control" />
+            <span class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <input id="Create" type="button" value="Create" class="btn btn-primary" />
+        </div>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function () {
+        var form = new FormData();
+        var fileInput = $("#input");
+        var file = null;
+        fileInput.change(function () {
+            alert("changed");
+            file = fileInput[0].files[0];
+        });
+        $("#Create").click(function () {
+            var fileName = $("#fileName").val();
+            var delimiter = $("#delimiter").val();
+            alert(delimiter);
+            form.append("fileName", fileName);
+            form.append("csvFile", file);
+            form.append("delimiter", delimiter);
+            Create(form);
+            
+        })
+        function Create(form) {
+            $.ajax({
+                type: "POST",
+                url: "/Files/Create",
+                processData: false,
+                contentType: false,
+                data:form,
+                success: function (json) {
+                    alert(json.message);
+                }
+            })
+        }
+
+    });
+</script>
+}

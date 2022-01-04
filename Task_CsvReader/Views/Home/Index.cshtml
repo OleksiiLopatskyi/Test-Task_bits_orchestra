@@ -2,12 +2,14 @@
     ViewData["Title"] = "Home Page";
 }
 
-<input id="input" type="file" />
-<input id="UploadButton" type="button" value="Upload" />
-<input id="ShowButton" disabled onclick="AllUsers()" value="show" type="button" />
+<select class="form-control" id="availableFiles">
+</select>
+<button style="position: absolute; top: 73px; right: 220px;" id="ShowButton" disabled onclick="AllUsers(); setFileToSessionStorage('file')" type="button" class="btn btn-primary">Show</button>
+
 <div hidden id="searchBox">
     <input type="search" class="form-control" placeholder="Search..." id="datatable-search-input">
-    <select id="selectedProperty" style="position: absolute; top: 109px; left: 199px;">
+    <a href="/Users/Create" onclick="setFileToSessionStorage('file')" style="position: absolute; top: 112px; right: 224px;" id="CreateNewUserButton" type="button" class="btn btn-primary">New</a>
+    <select id="selectedProperty" class="form-control" style="position: absolute; top: 111px; left: 135px; width: 150px;">
         <option>Id</option>
         <option>Name</option>
         <option>BirthDay</option>
@@ -51,34 +53,64 @@
     <tbody id="UsersTable">
     </tbody>
 </table>
+<a href="/Home/DownloadCSV?fileName=Employees" id="DownloadCSV" type="button" class="btn btn-primary">Download csv</a>
+
 @section scripts{
     <script>
         $(document).ready(function () {
+            var availableFiles = $("#availableFiles");
+            ShowAvailableFiles(availableFiles);
+            sessionStorage.setItem("file", $("#availableFiles")[0].selectedIndex=0);
+
+            if (availableFiles.val() != "") {
+                $("#ShowButton").removeAttr("disabled");
+            }
+            else {
+                $("#ShowButton").attr("disabled", true);
+            }
+
             var input = $("#input");
             var uploadedFile = null;
             var currentUsers = [];
             var table = $("#UsersTable");
             var formData = new FormData();
-            input.change(function () {
-                file = input[0].files[0];
-                formData.append("csvFile", file);
-            });
-            $("#UploadButton").click(function (e) {
-                e.preventDefault();
-                Upload(formData);
-            });
+            availableFiles.change(function () {
+                AllUsers();
+                setFileToSessionStorage("file");
+                var fileName = sessionStorage.getItem("file");
+                $("#DownloadCSV").attr("href", `Home/DownloadCSV?fileName=${fileName}`);
+            })
             $("#datatable-search-input").keyup(function () {
                 var selectedSearchProperty = $("#selectedProperty").val();
                 var searchValue = $(this).val();
-                Search(selectedSearchProperty, searchValue, table);
+                var fileName = $("#availableFiles").val();
+                Search(selectedSearchProperty, searchValue, table, fileName);
             })
+            $("#DownloadCSV").click(function () {
+                var fileName = $("#availableFiles").val();
+                $.ajax({
+                    type: "POST",
+                    url: `Home/DownloadCSV?fileName=${fileName}`,
+                    success: function (json) {
+                        if (json.message === "success") {
+                            window.location.href = json.url;
+                        };
+                    }
+                })
+            });
+            setFileToSessionStorage("file");
+
         })
-        function Search(by, value, table) {
-            table.html("");
+        function setFileToSessionStorage(name) {
+            var file = $("#availableFiles").val();
+            sessionStorage.setItem(name, file);
+        }
+        function Search(by, value, table, fileName) {
             $.ajax({
                 type: "POST",
-                url: "/Home/Search?property=" + by + "&value=" + value,
+                url: `/Home/FindUsersInFile?property=${by}&value=${value}&fileName=${fileName}`,
                 success: function (json) {
+                    table.html("");
                     ShowUsers(json.users, table);
                     currentUsers = json.users;
                 }
@@ -86,70 +118,60 @@
         }
         function SortBy(value, buttonName) {
             var SetData = $("#UsersTable");
+            var fileName = sessionStorage.getItem("file");
             var searchValue = $("#datatable-search-input").val();
             var selectedSearchProperty = $("#selectedProperty").val();
             ChangeOrdering(buttonName);
 
-                $.ajax({
-                    type: "GET",
-                    url: `/Home/Sort?search=${searchValue}&property=${selectedSearchProperty}&SortBy=${value}`,
-                    success: function (json) {
-                        SetData.html("");
-                        ShowUsers(json.users, SetData);
-                    }
-                })
-            }
-
-        function Upload(form) {
             $.ajax({
-                type: "POST",
-                url: "/Home/UploadCSV",
-                processData: false,
-                contentType: false,
-                data: form,
+                type: "GET",
+                url: `/Home/Sort?search=${searchValue}&property=${selectedSearchProperty}&SortBy=${value}&fileName=${fileName}`,
                 success: function (json) {
-                    $("#ShowButton").removeAttr("disabled");
+                    SetData.html("");
+                    ShowUsers(json.users, SetData);
                 }
             })
         }
+
         function AllUsers() {
-            var SetData = $("#UsersTable");
             $("#searchBox").removeAttr("hidden");
+            var data = $("#UsersTable");
+            var fileName = $("#availableFiles").val();
+            data.html("");
             $.ajax({
                 type: "POST",
-                url: "/Home/ShowUsers",
+                url: `/Home/ShowUsersFromFile?fileName=${fileName}`,
                 success: function (json) {
-                    alert(json.users.length);
-                    ShowUsers(json.users, SetData);
+                    ShowUsers(json.users, data);
                 }
-            });
+            })
         }
         function ShowUsers(users, table) {
             $.each(users, function (index, value) {
                 var data = `<tr>
-                    <td>
-                        <span>${value.id}</span>
-                    </td>
-                    <td>
-                       <span>${value.name}</span>
-                    </td>
-                     <td>
-                       <span>${value.convertedDateOfBirth}</span>
-                    </td>
-                    <td>
-                       <span>${value.phone}</span>
-                    </td>
-                    <td>
-                       <span>${value.married}</span>
-                    </td>
-                     <td>
-                       <span>${value.salary}</span>
-                    </td>
-                    <td>
-                        <a href="/Users/Edit/${value.id}">Edit</a>
-                        <a href="/Users/Delete/${value.id}">Delete</a>
-                    </td>
-                </tr>`;
+                                <td>
+                                    <span>${value.id}</span>
+                                </td>
+                                <td>
+                                   <span>${value.name}</span>
+                                </td>
+                                 <td>
+                                   <span>${value.convertedDateOfBirth}</span>
+                                </td>
+                                <td>
+                                   <span>${value.phone}</span>
+                                </td>
+                                <td>
+                                   <span>${value.married}</span>
+                                </td>
+                                 <td>
+                                   <span>${value.salary}</span>
+                                </td>
+                                <td>
+                                    <a href="/Users/Edit/${value.id}">Edit</a>
+                                    <a href="/Users/Delete/${value.id}">Delete</a>
+                                </td>
+                            </tr>`;
 
                 table.append(data);
             })
@@ -181,8 +203,8 @@
                     $("#birthDayColumnDesc").attr("hidden", true);
                     break;
                 case "phone":
-                    $("#nameColumnDesc").removeAttr("hidden");
-                    $("#nameColumn").attr("hidden", true);
+                    $("#phoneColumnDesc").removeAttr("hidden");
+                    $("#phoneColumn").attr("hidden", true);
                     break;
                 case "phoneDesc":
                     $("#phoneColumn").removeAttr("hidden");
@@ -207,6 +229,18 @@
                 default:
             }
 
+        }
+        function ShowAvailableFiles(data) {
+            $.ajax({
+                type: "POST",
+                url: "/Home/ShowAvailableFiles",
+                success: function (json) {
+                    $.each(json.files, function (index, value) {
+                        var html = `<option>${value.fileName}</option>`;
+                        data.append(html);
+                    })
+                }
+            })
         }
     </script>
 }
