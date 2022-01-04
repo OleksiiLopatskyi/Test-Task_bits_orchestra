@@ -57,11 +57,12 @@
 
 @section scripts{
     <script>
+        
+       
         $(document).ready(function () {
             var availableFiles = $("#availableFiles");
             ShowAvailableFiles(availableFiles);
-            sessionStorage.setItem("file", $("#availableFiles")[0].selectedIndex=0);
-
+            setFileToSessionStorage("file");
             if (availableFiles.val() != "") {
                 $("#ShowButton").removeAttr("disabled");
             }
@@ -239,6 +240,9 @@
                         var html = `<option>${value.fileName}</option>`;
                         data.append(html);
                     })
+                    if(json.files.length<1)
+                        $("#DownloadCSV").attr("href", "Home/DownloadCSV");
+                    else $("#DownloadCSV").attr("href", "Home/DownloadCSV?fileName="+json.files[0].fileName);
                 }
             })
         }

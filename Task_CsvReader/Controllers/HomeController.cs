@@ -127,7 +127,11 @@ namespace Task_CsvReader.Controllers
             // Тип файла - content-type
             string file_type = "application/octet-stream";
             // Имя файла - необязательно
-            string file_name = fileName+".csv";
+            string file_name = string.Empty;
+            if (fileName == null)
+                file_name = fileName + "Example.csv";
+            else
+                file_name = fileName + ".csv";
             return File(fileBytes, file_type, file_name);
         }
         public IActionResult Privacy()

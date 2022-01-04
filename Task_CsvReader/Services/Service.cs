@@ -133,17 +133,43 @@ namespace Task_CsvReader.Services
         public async Task<byte[]> DownloadCSV(UsersContext context,string fileName,string path)
         {
             var file = await context.Files.Include(i=>i.Users).FirstOrDefaultAsync(i=>i.FileName==fileName);
-            var users = file.Users;
-            using(var stream = new StreamWriter(path))
+           
+            if (file == null)
             {
-                using(CsvWriter writer = new CsvWriter(stream, CultureInfo.InvariantCulture))
+                path = $@"D:\Test-Task_bits_orchestra\Task_CsvReader\wwwroot\Uploads\Example.csv";
+
+                using (FileStream fs = System.IO.File.Create(path))
                 {
-                    writer.Context.RegisterClassMap<UsersMap>();
-                    writer.WriteRecords(users);
+                    fs.Flush();
                 }
+                
+                using (var stream = new StreamWriter(path))
+                {
+                    using (CsvWriter writer = new CsvWriter(stream, CultureInfo.InvariantCulture))
+                    {
+                        writer.Context.RegisterClassMap<UsersMap>();
+                        writer.WriteHeader<User>();
+                    }
+                }
+                byte[] fileBytes = System.IO.File.ReadAllBytes(path);
+                System.IO.File.Delete(path);
+                return fileBytes;
             }
-            byte[] fileBytes = System.IO.File.ReadAllBytes(path);
-            return fileBytes;
+            else
+            {
+                var users = file.Users;
+                using (var stream = new StreamWriter(path))
+                {
+                    using (CsvWriter writer = new CsvWriter(stream, CultureInfo.InvariantCulture))
+                    {
+                        writer.Context.RegisterClassMap<UsersMap>();
+                        writer.WriteRecords(users);
+                    }
+                }
+                byte[] fileBytes = System.IO.File.ReadAllBytes(path);
+                System.IO.File.Delete(path);
+                return fileBytes;
+            }
         }
     }
 }
