@@ -53,16 +53,24 @@ namespace Task_CsvReader.Services
                 {
                     using (var csvReader = new CsvReader(stream, csvConfig))
                     {
-                        csvReader.Context.RegisterClassMap<UsersMap>();
-                        csvReader.Read();
-                        csvReader.ReadHeader();
-                        while (csvReader.Read())
+                        try
                         {
-                            var user = csvReader.GetRecord<User>();
-                            user.ConvertedDateOfBirth = user.BirthDay.ToString("dd-mm-yyyy");
-                            users.Add(user);
+                            csvReader.Context.RegisterClassMap<UsersMap>();
+                            csvReader.Read();
+                            csvReader.ReadHeader();
+                            while (csvReader.Read())
+                            {
+                                var user = csvReader.GetRecord<User>();
+                                user.ConvertedDateOfBirth = user.BirthDay.ToString("dd-mm-yyyy");
+                                users.Add(user);
+                            }
+                        }catch(Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
                         }
+                       
                     }
+                    stream.Close();
                 }
             });
             return users;
@@ -142,7 +150,6 @@ namespace Task_CsvReader.Services
                 {
                     fs.Flush();
                 }
-                
                 using (var stream = new StreamWriter(path))
                 {
                     using (CsvWriter writer = new CsvWriter(stream, CultureInfo.InvariantCulture))

@@ -51,15 +51,24 @@ namespace Task_CsvReader.Controllers
             string filePath = $@"{_environment.WebRootPath}\Uploads\{csvFile.FileName}";
             string delimiter = form["delimiter"];
             var users =  await _service.GetUsersFromCsvAsync(csvFile,filePath,delimiter);
-            File file = new File()
+            if (users.Count() > 0)
             {
-                FileName = form["fileName"],
-                Users = users,
-                DateOfCreation=DateTime.Now
-            };
-            await _service.AddUsersToDatabase(_db,file);
-            await _service.DeleteFileAsync(filePath);
-            return Json(new {message="success"});
+
+                File file = new File()
+                {
+                    FileName = form["fileName"],
+                    Users = users,
+                    DateOfCreation = DateTime.Now
+                };
+                await _service.AddUsersToDatabase(_db, file);
+                await _service.DeleteFileAsync(filePath);
+                return Json(new { message = "success" });
+            }
+            else
+            {
+                return Json(new { message = "Filed reading file or table is empty" });
+
+            }
         }
 
         // GET: Files/Edit/5
@@ -138,6 +147,8 @@ namespace Task_CsvReader.Controllers
         {
             var file = await _db.Files.Include(i=>i.Users).FirstOrDefaultAsync(i=>i.Id==id);
             _db.Files.Remove(file);
+           _db.Users.RemoveRange(_db.Users.Where(i=>i.FileId==id));
+
             await _db.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }

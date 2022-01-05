@@ -87,18 +87,7 @@
                 var fileName = $("#availableFiles").val();
                 Search(selectedSearchProperty, searchValue, table, fileName);
             })
-            $("#DownloadCSV").click(function () {
-                var fileName = $("#availableFiles").val();
-                $.ajax({
-                    type: "POST",
-                    url: `Home/DownloadCSV?fileName=${fileName}`,
-                    success: function (json) {
-                        if (json.message === "success") {
-                            window.location.href = json.url;
-                        };
-                    }
-                })
-            });
+       
             setFileToSessionStorage("file");
 
         })
@@ -241,8 +230,8 @@
                         data.append(html);
                     })
                     if(json.files.length<1)
-                        $("#DownloadCSV").attr("href", "Home/DownloadCSV");
-                    else $("#DownloadCSV").attr("href", "Home/DownloadCSV?fileName="+json.files[0].fileName);
+                        $("#DownloadCSV").attr("href", "/Home/DownloadCSV");
+                    else $("#DownloadCSV").attr("href", "/Home/DownloadCSV?fileName="+json.files[0].fileName);
                 }
             })
         }

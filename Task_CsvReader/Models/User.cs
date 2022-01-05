@@ -15,5 +15,6 @@ namespace Task_CsvReader.Models
         public string Phone { get; set; }
         public bool Married { get; set; }
         public decimal Salary { get; set; }
+        public int FileId { get; set; }
     }
 }
